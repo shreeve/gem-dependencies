@@ -56,7 +56,7 @@ module Gem
         deps or return
         deps = deps.strip.split(/\s+/) if deps.is_a?(String)
         deps = deps.compact.uniq
-        base = File.dirname(env.split(/[?;#]/,2).first if slot = deps.index("*")
+        base = File.dirname(env.split(/[?;#]/,2).first) if slot = deps.index("*")
         path = File.join(base, "#{spec.full_name}.tar.gz") if base
         path << "?raw=true" if path && path.start_with?("https://github.com/")
         deps[slot] = path if slot
