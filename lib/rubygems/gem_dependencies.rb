@@ -128,7 +128,7 @@ module Gem
             path = File.join(root, file.full_name)
             mode = file.header.mode
             if file.directory?
-              FileUtils.mkdir_p(path, mode)
+              FileUtils.mkdir_p(path, mode:mode)
             else
               FileUtils.mkdir_p(File.dirname(path))
               File.binwrite(path, file.read)
