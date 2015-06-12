@@ -62,7 +62,7 @@ module Gem
           say "* Installing '#{item}' dependency"
         end
         cmds = @@deps["*"]["command"].strip.split(/\s+/).flat_map {|item| item == '${packages}' ? args : item}
-        Gem::Util.silent_system(*cmds) or return say "Unable to install dependencies for #{spec.full_name}"
+        Gem::Util.silent_system(*cmds)
         true # success/error?
       end
 
