@@ -41,6 +41,7 @@ module Gem
       def find_dependencies(env)
         require 'rubygems/remote_fetcher'
         @@deps = YAML.load(fetch(env))['gems'] unless defined?(@@deps)
+        @@deps.key?[spec.name] or return
 
         case deps = @@deps[spec.name]
         when nil # no deps provided, assume one extension file relative to the index
