@@ -97,7 +97,7 @@ module Gem
                 tf.write(File.binread(file))
               end
             elsif stat.directory?
-              tar.mkdir(name, mode)
+              tar.mkdir(name, stat.mode)
             end
           end
         end
