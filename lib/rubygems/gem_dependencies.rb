@@ -44,10 +44,10 @@ module Gem
         @@deps.key?[spec.name] or return
 
         case deps = @@deps[spec.name]
-        when nil # no deps provided, assume one extension file relative to the index
           path = File.join(File.dirname(env.split(/[?;#]/,2).first), "#{spec.full_name}.tar.gz")
           path << "?raw=true" if path.start_with?("https://github.com/")
           deps = [path]
+        when nil, "*" # assume one extension file relative to the index
         when String # string of space-delimited dependencies and extensions
         when Array # array of dependencies and extensions
         when Hash # hash of dependencies and extensions, indexed by version requirements
