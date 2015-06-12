@@ -51,7 +51,7 @@ module Gem
         when String # string of space-delimited dependencies and extensions
         when Array # array of dependencies and extensions
         when Hash # hash of dependencies and extensions, indexed by version requirements
-          reqs, deps = deps.find do |reqs, info|
+          reqs, deps = deps.find do |reqs, info| # deps is an array or space-delimited string
             Gem::Requirement.new(reqs.split(',')).satisfied_by?(spec.version)
           end
         end
