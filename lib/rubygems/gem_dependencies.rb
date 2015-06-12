@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 # =============================================================================
 # gem_dependencies.rb: Simplifies installing binary gems on runtime systems
 #
