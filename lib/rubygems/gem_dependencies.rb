@@ -43,9 +43,9 @@ module Gem
         @@deps = YAML.load(fetch(env))['gems'] unless defined?(@@deps)
 
         case deps = @@deps[spec.name]
-        when String
-        when Array
-        when Hash
+        when String # string of space-delimited dependencies and extensions
+        when Array # array of dependencies and extensions
+        when Hash # hash of dependencies and extensions, indexed by version requirements
           reqs, deps = deps.find do |reqs, info|
             Gem::Requirement.new(reqs.split(',')).satisfied_by?(spec.version)
           end
