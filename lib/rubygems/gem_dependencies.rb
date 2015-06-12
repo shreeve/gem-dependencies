@@ -58,13 +58,11 @@ module Gem
       end
 
       def install_os_packages(*args)
-        command = @@deps["*"]
-        command = command["command"] if command
-        command = command.sub('${packages}', args * ' ') if command
         args.each do |item|
           say "* Installing '#{item}' dependency"
         end
-        Gem::Util.silent_system(command) or return say "Unable to install dependencies for #{spec.full_name}"
+        cmds = @@deps["*"]["command"].strip.split(/\s+/).flat_map {|item| item == '${packages}' ? args : item}
+        Gem::Util.silent_system(*cmds) or return say "Unable to install dependencies for #{spec.full_name}"
         true # success/error?
       end
 
