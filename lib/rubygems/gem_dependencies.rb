@@ -23,6 +23,7 @@ module Gem
     module Dependencies
       require 'rubygems/user_interaction'
       include Gem::UserInteraction
+      REGEXP_SCHEMA = %r|\A[a-z][a-z\d]{1,5}://|io
 
       def build_extensions
         if (env = ENV["GEM_DEPENDENCIES"]) == "1"
@@ -53,7 +54,7 @@ module Gem
         end
         deps or return
         deps = deps.strip.split(/\s+/) if deps.is_a?(String)
-        deps.compact.uniq.partition {|item| !item.end_with?(".tar.gz")}
+        deps.compact.uniq.partition {|item| item =~ REGEXP_SCHEMA || item.end_with?(".tar.gz")}.reverse
       end
 
       def install_os_packages(*args)
@@ -80,7 +81,7 @@ module Gem
 
       def fetch(item)
         tool = Gem::RemoteFetcher.fetcher
-        item =~ /\A[a-z]\w{0,4}:/i ? tool.fetch_path(item) : File.binread(item)
+        item =~ REGEXP_SCHEMA ? tool.fetch_path(item) : File.binread(item)
       end
 
       # The tar/gz code below is based on MIT licensed code by Colin MacKenzie IV
