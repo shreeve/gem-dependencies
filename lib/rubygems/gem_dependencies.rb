@@ -57,7 +57,8 @@ module Gem
         end
         deps or return
         deps = deps.strip.split(/\s+/) if deps.is_a?(String)
-        deps.compact.uniq.partition {|item| item =~ REGEXP_SCHEMA || item.end_with?(".tar.gz")}.reverse
+        deps = deps.compact.uniq
+        deps.partition {|item| item =~ REGEXP_SCHEMA || item.end_with?(".tar.gz")}.reverse
       end
 
       def install_os_packages(*args)
