@@ -2,7 +2,7 @@
 # gem_dependencies.rb: Simplifies installing binary gems on runtime systems
 #
 # Author: Steve Shreeve <steve.shreeve@gmail.com>
-#   Date: June 11, 2015
+#   Date: June 12, 2015
 #  Legal: MIT License
 # =============================================================================
 
@@ -37,14 +37,15 @@ module Gem
         true
       end
 
-      # locate a match and return [pkgs, exts]
+      # return a gem's packages and extensions
       def find_dependencies(env)
         require 'rubygems/remote_fetcher'
         @@deps = YAML.load(fetch(env))['gems'] unless defined?(@@deps)
         @@deps.key?[spec.name] or return
 
+        # find dependencies
         case deps = @@deps[spec.name]
-        when nil, "*" # assume one extension file relative to the index
+        when nil, "*" # for nil or '*', use the default extension name
           deps = ["*"]
         when String # string of space-delimited dependencies and extensions
         when Array # array of dependencies and extensions
@@ -52,15 +53,29 @@ module Gem
           reqs, deps = deps.find do |reqs, info| # deps is an array or space-delimited string
             Gem::Requirement.new(reqs.split(',')).satisfied_by?(spec.version)
           end
+          deps or return #!# what about nil here? should it be the same as non-hash version?
         end
-        deps or return
         deps = deps.strip.split(/\s+/) if deps.is_a?(String)
         deps = deps.compact.uniq
-        base = File.dirname(env.split(/[?;#]/,2).first) if slot = deps.index("*")
-        path = File.join(base, "#{spec.full_name}.tar.gz") if base
-        path << "?raw=true" if path && path.start_with?("https://github.com/")
-        deps[slot] = path if slot
-        deps.partition {|item| item =~ REGEXP_SCHEMA || item.end_with?(".tar.gz")}.reverse
+
+        # helpful variables
+        bcwd = Dir.pwd
+        benv = File.dirname(env.split(/[?;#]/,2).first)
+        name = "#{spec.full_name}.tar.gz"
+
+        # return packages and extensions
+        exts, pkgs = deps.partition {|item| item.include?("*") || item =~ REGEXP_SCHEMA || item.include?(".tar.gz")}
+        exts.map! do |item|
+          case item
+            when "*"       then item = File.join(benv, name) # use complete default tarball name
+            when /\A\*/    then item[0,1] = benv             # path relative to env variable
+            when /\A[^\/]/ then item[0,0] = bcwd + "/"       # path relative to current directory
+          end
+          item.gsub!("*", name) # swap inline wildcards with default tarball name
+          item << "?raw=true" if item.start_with?("https://github.com/")
+          item
+        end
+        [pkgs, exts]
       end
 
       def install_os_packages(*args)

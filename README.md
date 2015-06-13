@@ -25,17 +25,12 @@ gems:
   "*":
     command: sudo apk --update add ${packages}
   bcrypt:
-    "~> 2.0, <= 3.1":
+    "~> 2.0, <= 3.3":
       - bcrypt-2.1
-      - libxml2-3.4
-      - libyagni-1.0c
-    "~> 3.1.5": "bcrypt-3.1.10.tar.gz tree"
+      - "*"
   nokogiri:
-    "~> 2.0, <= 3.1":
-      - bcrypt-2.1
-      - libxml2-3.4
-      - libyagni-1.0c
-    "~> 3.1.5": "s3://one:two@s3.amazon.com/three/bcrypt-3.1.10.tar.gz tree"
+    "~> 1.6.2, < 1.8": "* libxml2-dev libxslt-dev"
+    "1.2.8": "s3://one:two@s3.amazon.com/three/* tree"
 ```
 
 After determining the runtime dependencies and creating a compiled extensions tarball, edit the dependency index to add a key with the name of the new gem and sub-keys to indicate the version requirements. The values of these sub-key are either an array of package dependencies and extension tarballs or a space-delimited string of the same. All items ending in ```.tar.gz``` are considered to be extension tarballs and everything else is considered to be a package dependency. Extension tarballs can also be given as a file system path or an http, https, git, or s3 url.
@@ -59,7 +54,7 @@ The dependency index will be downloaded and searched for the requested gem and v
 Note that a version requirement can also be specified in the ```gem install``` command. For example, the following are all valid:
 
 ```shell
-bcrypt, bcrypt:3.1.4, "bcrypt:~>3.1.8", "bcrypt > 3.1.4, ~3.2, < 3.8"
+bcrypt, bcrypt:3.1.4, "bcrypt:~>3.1.8", "bcrypt > 3.1.4, ~> 3.2, < 3.8"
 ```
 
 Using this approach, a runtime system can quickly and efficiently install dependencies and extensions without the need to compile them locally.
