@@ -40,7 +40,7 @@ After determining the runtime dependencies and creating a compiled extensions ta
 If ```GEM_DEPENDENCIES``` is set to a file system path or an http, https, git, or s3 url, then this value will be used to fetch the dependency index. Suppose the following command is run from the runtime system:
 
 ```shell
-export GEM_DEPENDENCIES="https://dist.foo.com/gemdeps/alpine-3.2-x86_64/index.yaml"
+export GEM_DEPENDENCIES="https://github.com/shreeve/gem_dependencies/alpine-3.2-ruby-2.2-x86_64.yml"
 gem install bcrypt
 ```
 
