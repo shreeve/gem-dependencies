@@ -67,6 +67,14 @@ To make bundler to use this gem as well, you need to load the rubygems_plugin be
 alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
 ```
 
+## Todos
+
+* Allow both compiler and runtime package dependencies in the dependency index file
+* Allow the use of flags (such as ```--use-system-libraries```) for packages
+* Make sure everything works seamlessly with ```bundler```
+* Document the various formats supported in the dependency index file
+* Document how to create a platform repository (e.g. on GitHub)
+
 ## License
 
 This software is licensed under terms of the MIT License.
