@@ -47,9 +47,9 @@ module Gem
         case deps = @@deps[spec.name]
         when nil, "*" # for nil or '*', use the default extension name
           deps = ["*"]
-        when String # string of space-delimited dependencies and extensions
-        when Array # array of dependencies and extensions
-        when Hash # hash of dependencies and extensions, indexed by version requirements
+        when String # string of space-delimited packages and extensions
+        when Array # array of packages and extensions
+        when Hash # hash of packages and extensions, indexed by version requirements
           reqs, deps = deps.find do |reqs, info| # deps is an array or space-delimited string
             Gem::Requirement.new(reqs.split(',')).satisfied_by?(spec.version)
           end
@@ -80,7 +80,7 @@ module Gem
 
       def install_os_packages(*args)
         args.each do |item|
-          say "* Installing '#{item}' dependency"
+          say "* Installing '#{item}'"
         end
         cmds = @@deps["*"]["command"].strip.split(/\s+/).flat_map {|item| item == '${packages}' ? args : item}
         Gem::Util.silent_system(*cmds)
