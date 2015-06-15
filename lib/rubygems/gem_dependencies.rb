@@ -82,9 +82,8 @@ module Gem
         args.each do |item|
           say "* Installing '#{item}'"
         end
-        cmds = @@deps["*"]["command"].strip.split(/\s+/).flat_map {|item| item == '${packages}' ? args : item}
-        Gem::Util.silent_system(*cmds)
-        true # success/error?
+        exec = @@deps["*"]["command"].sub('${packages}', args * ' ')
+        system(exec) or return warn("Unable to execute: #{exec}")
       end
 
       def copy_gem_extensions(*args)

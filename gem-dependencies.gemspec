@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "gem-dependencies"
-  s.version     = "0.2.1"
+  s.version     = "0.2.2"
   s.summary     = "RubyGems plugin to simplify installing binary gems on runtime systems."
   s.description = "This gem makes it easy to install binary gems on systems without a compiler."
   s.homepage    = "https://github.com/shreeve/gem-dependencies"
