@@ -54,7 +54,10 @@ The dependency index will be downloaded and searched for the requested gem and v
 Note that a version requirement can also be specified in the ```gem install``` command. For example, the following are all valid:
 
 ```shell
-bcrypt, bcrypt:3.1.4, "bcrypt:~>3.1.8", "bcrypt > 3.1.4, ~> 3.2, < 3.8"
+gem install bcrypt
+gem install bcrypt:3.1.4
+gem install "bcrypt:~>3.1.8"
+gem install "bcrypt > 3.1.4, ~> 3.2, < 3.8"
 ```
 
 Using this approach, a runtime system can quickly and efficiently install dependencies and extensions without the need to compile them locally.
