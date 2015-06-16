@@ -132,7 +132,7 @@ module Gem
       end
 
       def gunzip(str)
-        return str if str[0,2] != "\x1f\x8"
+        return str if str[0,2] != [31,139].pack('C2') # gzip signature
         gz_io = StringIO.new(str)
         z = Zlib::GzipReader.new(gz_io)
         str = z.read
