@@ -76,9 +76,9 @@ alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
 
 * Allow both compiler and runtime package dependencies in the dependency index file
 * Allow the use of flags (such as ```--use-system-libraries```) for packages
-* ~~Make sure everything works seamlessly with ```bundler```~~
-* Document the various formats supported in the dependency index file
 * Document how to create a platform repository (e.g. on GitHub)
+* ~~Make sure everything works seamlessly with ```bundler```~~
+* ~~Document the various formats supported in the dependency index file~~
 
 ## License
 
