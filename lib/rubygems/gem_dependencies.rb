@@ -71,9 +71,7 @@ module Gem
             when /\A\*/    then item[0,1] = benv             # path relative to env variable
             when /\A[^\/]/ then item[0,0] = bcwd + "/"       # path relative to current directory
           end
-          item.gsub!("*", name) # swap inline wildcards with default tarball name
-          item << "?raw=true" if item.start_with?("https://github.com/")
-          item
+          item.gsub("*", name) # swap inline wildcards with default tarball name
         end
         [pkgs, exts]
       end
@@ -99,6 +97,7 @@ module Gem
 
       def fetch(item)
         tool = Gem::RemoteFetcher.fetcher
+        item = item + "?raw=true" if item.start_with?("https://github.com/")
         item =~ REGEXP_SCHEMA ? tool.fetch_path(item) : File.binread(item)
       end
 
