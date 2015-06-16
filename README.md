@@ -23,17 +23,19 @@ The dependency index is a YAML file that contains information necessary to insta
 ```yaml
 gems:
   "*":
-    command: sudo apk --update add ${packages}
+    command: apk --update add ${packages}
   bcrypt:
-    "~> 2.0, <= 3.3":
-      - bcrypt-2.1
-      - "*"
+  json:
+  mysql2: "* mariadb-libs"
   nokogiri:
-    "~> 1.6.2, < 1.8": "* libxml2-dev libxslt-dev"
-    "1.2.8": "s3://one:two@s3.amazon.com/three/* tree"
+    "~> 1.6.2, < 1.8": "*  libxml2 libxslt"
+    "~> 1.4.1": "*/old-gems/* libxml2"
+    "1.2.2": "s3://foo:bar@s3.amazon.com/baz/* one two three"
 ```
 
 After determining the runtime dependencies and creating a compiled extensions tarball, edit the dependency index to add a key with the name of the new gem and sub-keys to indicate the version requirements. The values of these sub-key are either an array of package dependencies and extension tarballs or a space-delimited string of the same. All items ending in ```.tar.gz``` are considered to be extension tarballs and everything else is considered to be a package dependency. Extension tarballs can also be given as a file system path or an http, https, git, or s3 url.
+
+There are several naming shortcuts that can be used for extension tarballs. In the common case, when there is one tarball with binary extensions for a gem and no package dependencies, you can simply leave the hash value empty (as shown in the case of ```bcrypt``` above). This will cause ```gem-dependencies``` to download and extract a file named ```bcrypt-3.1.10.tar.gz``` (or whatever gem name and version you are installing) from the base path of the ```GEM_DEPENDENCIES``` environment variable. If, as in the case of ```mysql2``` above, you do have some platform dependencies, then use the ```*``` to indicate the 'default' extension tarball and then list the package dependencies. If a ```*``` character is found anywhere else, it will be interpreted as the value ```{gemname}-{version}.tar.gz```. You can combine wildcards such as the case of ```nokogiri``` above, where ```*/old-repos/*``` will give ```https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/old-gems/nokogiri-1.4.4.tar.gz```. These shortcuts are much easier to type and they will dynamically use the proper gem versions.
 
 ## Runtime system
 
