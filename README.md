@@ -35,7 +35,7 @@ gems:
     "< 0.0.4": "s3://foo:bar@s3.amazon.com/baz/* one two three"
 ```
 
-The format of this file is quite flexible.  Keys in the above hash represent gems that have binary extensions. The hash values can be ```nil``` (see ```bcrypt```), a ```String``` (see ```mysql2```), an ```Array``` (see ```pokogiri```), or a version-indexed ```Hash``` (see ```enf_ext```). Shortcuts are defined for each space-delimited ```String``` or ```Array``` element such that:
+The format of this file is quite flexible.  Keys in the above hash represent gems that have binary extensions. The hash values can be ```nil``` (see ```bcrypt```), a ```String``` (see ```mysql2```), an ```Array``` (see ```pokogiri```), or a version-indexed ```Hash``` (see ```unf_ext```). Shortcuts are defined for each space-delimited ```String``` or ```Array``` element such that:
 
 * a ```nil``` or ```*``` is a sibling file to the dependency index, named ```${gemname}-${version}.tar.gz```
 * a leading ```*``` will be replaced with the base directory of the dependency index
@@ -111,19 +111,102 @@ Using this approach, a runtime system can quickly and efficiently install depend
 
 ## Using bundler
 
-To make bundler to use this gem as well, you need to load the rubygems_plugin before. The easiest way is to make an alias in your `~/.bashrc`, such as:
+To make bundler to use this gem as well, you need to require the plugin before ```bundler``` runs. The easiest way is to make an alias in your `~/.bashrc`, such as:
 
 ```
 alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
 ```
 
+Alternatively, you can also just set the environment variable beforehand like this:
+
+```
+RUBYOPT="-rrubygems/gem_dependencies" bundle
+```
+
+## Docker example with Alpine Linux
+
+### Development system
+
+```shell
+# create a new ephemeral container based on the latest alpine linux
+docker run -it --rm alpine /bin/sh
+
+# install some baseline packages
+apk --update add openssh ca-certificates
+
+# install ruby and setup rubygems to not generate documentation
+apk --update add ruby ruby-irb ruby-bigdecimal
+echo "gem: --no-document" > /etc/gemrc
+
+# install the alpine sdk and ruby development dependencies
+apk --update add alpine-sdk ruby-dev
+
+# install gem-dependencies (use "+" for development systems)
+export GEM_DEPENDENCIES="+https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/INDEX.yaml"
+gem install gem-dependencies
+
+# update rubygems and any installed gems
+gem update --system
+gem update
+
+# install some gems with binary extensions
+mkdir /tmp/gems && cd /tmp/gems
+gem install atomic bcrypt
+
+# use bundler (needs io-console)
+gem install bundler io-console
+alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
+bundle
+```
+
+As the development system installs gems, any compiled extensions will be saved as tarballs in the current directory. If a particular gem requires a development package to be installed, make sure to update the dependency index file so those dependencies will be automatically installed for you next time. Also, update the dependency index file to reference the extension tarball and any runtime dependencies.
+
+### Runtime system
+
+```shell
+# create a new ephemeral container based on the latest alpine linux
+docker run -it --rm alpine /bin/sh
+
+# install some baseline packages
+apk --update add openssh ca-certificates
+
+# install ruby and setup rubygems to not generate documentation
+apk --update add ruby ruby-irb ruby-bigdecimal
+echo "gem: --no-document" > /etc/gemrc
+
+# install gem-dependencies (no "+" means this is a runtime system)
+export GEM_DEPENDENCIES="https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/INDEX.yaml"
+gem install gem-dependencies
+
+# update rubygems and any installed gems
+gem update --system
+gem update
+
+# install some gems with binary extensions (will download, not compile them)
+mkdir /tmp/gems && cd /tmp/gems
+gem install atomic bcrypt
+
+# use bundler (needs io-console)
+gem install bundler io-console
+alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
+bundle
+```
+
+The runtime system will refer to the dependency index file to determine which gems require runtime packages and will automatically download and extract and tarballs with compiled extensions.
+
+### Platform repository
+
+A platform repository is simply a location (a file system path or an http, https, git, or s3 url) that contains a dependency index file and, optionally, tarballs with compiled extensions. Ideally, the system's distribution name and version, architecture, and Ruby API level should be included. For an example, please refer to:
+
+* https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0
+
 ## Todos
 
-* Document how to create a platform repository (e.g. on GitHub)
+* ~~Make sure everything works seamlessly with ```bundler```~~
+* ~~Document the various formats supported in the dependency index file~~
 * ~~Allow both compiler and runtime package dependencies in the dependency index file~~
 * ~~Allow the use of flags (such as ```--use-system-libraries```) for packages~~
-* ~~Document the various formats supported in the dependency index file~~
-* ~~Make sure everything works seamlessly with ```bundler```~~
+* ~~Document how to create a platform repository (e.g. on GitHub)~~
 
 ## License
 
