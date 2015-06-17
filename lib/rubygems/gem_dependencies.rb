@@ -61,7 +61,8 @@ module Gem
           reqs, deps = deps.find do |reqs, info| # deps is an array or space-delimited string
             Gem::Requirement.new(reqs.split(',')).satisfied_by?(spec.version)
           end
-          deps or return #!# what about nil here? should it be the same as non-hash version?
+          reqs or return # can't find the right version
+          deps ||= ["*"] # deps are nil, use the default extension name
         end
         deps = deps.strip.split(/\s+/) if deps.is_a?(String)
         deps = deps.compact.uniq
