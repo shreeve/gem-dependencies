@@ -1,57 +1,102 @@
 # gem-dependencies
 
-A RubyGems plugin to simplify installing binary gems on runtime systems. Runtime system are usually lightweight and might not even have a compiler. This is accomplished by using a development machine to determine these dependencies and to create tarballs of compiled extensions. Through the use of a dependency index file, these dependencies and extensions can be clearly specified and shared.
+A RubyGems plugin that simplifies working with gems that have binary extensions. It does this through the use of a succinct dependency index file. For development systems, this file specifies build dependencies and arguments necessary to compile and create a tarball with a gem's binary extensions. For runtime systems, which are lightweight and might not have access to a compiler, the dependency index file provides a list of runtime dependencies that must first be installed and also specifies the tarball which contains the pre-built binary extension files.
+
+## TL;DR
+
+Think of ```gem-dependencies``` as a helper that allows lightweight systems, such as docker containers, to be able to use native rubygems without having a compiler installed. At the moment that ```gem install``` would normally try to compile a binary extension, ```gem-dependencies``` will lookup the gem in it's dependency index and, if a matching version is found, install any required runtime packages and then download and extract any pre-compiled binary extensions. Everything works seamlessly and efficiently.
 
 ## Usage
 
-You don't need to do anything special, just use ```gem install``` as normal. The resulting behavior is controlled by the value of the ```GEM_DEPENDENCIES``` environment variable. If this environment variable is not set, then this gem has no effect and is simply ignored.
-
-## Development system
-
-Make sure you have a development system with the same architecture as your runtime system. On the development system, make a note of all of the package dependencies needed to install the desired gem. Finally, run:
-
-```shell
-$ GEM_DEPENDENCIES=1 gem install bcrypt
-```
-
-This will perform a normal install, but it will also create a tarball in the current directory with the compiled extensions for the given gem. The naming scheme is straightforward and based on the gem's name and version (e.g. ```bcrypt-3.1.10.tar.gz```).
+You don't need to do anything special, just use ```gem install``` as normal. The resulting behavior is controlled by the value of the ```GEM_DEPENDENCIES``` environment variable. If this environment variable is not set, then this gem has no effect and is simply ignored. If ```GEM_DEPENDENCIES``` is set to a file system path or an http, https, git, or s3 url, then this value will be used to fetch the dependency index. As an additional help, all urls that begin with ```https://github.com/``` will be automatically suffixed with ```?raw=true```.
 
 ## Dependency index
 
-The dependency index is a YAML file that contains information necessary to install gems on the runtime system. An example dependency file looks like:
+The dependency index is a YAML file that contains information necessary to compile gems on a development system or install them on a runtime system. A dependency index file looks like this:
 
 ```yaml
 gems:
   "*":
     command: apk --update add ${packages}
   bcrypt:
-  json:
   mysql2: "* mariadb-libs"
-  nokogiri:
-    "~> 1.6.2, < 1.8": "*  libxml2 libxslt"
-    "~> 1.4.1": "*/old-gems/* libxml2"
-    "1.2.2": "s3://foo:bar@s3.amazon.com/baz/* one two three"
+  nokogiri: "* libxml2 libxslt +libxml2-dev +libxslt-dev -- --use-system-libraries"
+  pokogiri:
+    - "*"
+    - libxml2
+    - libxslt
+    - +libxml2-dev
+    - +libxslt-dev
+    - --
+    - --use-system-libraries
+  unf_ext:
+    "~> 0.0.7.1": "* libstdc++"
+    ">= 0.0.4, < 0.0.7": "*/old-gems/* libstdc++"
+    "< 0.0.4": "s3://foo:bar@s3.amazon.com/baz/* one two three"
 ```
 
-After determining the runtime dependencies and creating a compiled extensions tarball, edit the dependency index to add a key with the name of the new gem and sub-keys to indicate the version requirements. The values of these sub-key are either an array of package dependencies and extension tarballs or a space-delimited string of the same. All items ending in ```.tar.gz``` are considered to be extension tarballs and everything else is considered to be a package dependency. Extension tarballs can also be given as a file system path or an http, https, git, or s3 url. As an additional help, all urls that begin with ```https://github.com/``` will be automatically suffixed with ```?raw=true```.
+The format of this file is quite flexible.  Keys in the above hash represent gems that have binary extensions. The hash values can be ```nil``` (see ```bcrypt```), a ```String``` (see ```mysql2```), an ```Array``` (see ```pokogiri```), or a version-indexed ```Hash``` (see ```enf_ext```). Shortcuts are defined for each space-delimited ```String``` or ```Array``` element such that:
 
-There are several naming shortcuts that can be used for extension tarballs. In the common case, when there is one tarball with binary extensions for a gem and no package dependencies, you can simply leave the hash value empty (as shown in the case of ```bcrypt``` above). This will cause ```gem-dependencies``` to download and extract a file named ```bcrypt-3.1.10.tar.gz``` (or whatever gem name and version you are installing) from the base path of the ```GEM_DEPENDENCIES``` environment variable. If, as in the case of ```mysql2``` above, you do have some platform dependencies, then use the ```*``` to indicate the 'default' extension tarball and then list the package dependencies. If a ```*``` character is found anywhere else, it will be interpreted as the value ```{gemname}-{version}.tar.gz```. You can combine wildcards such as the case of ```nokogiri``` above, where ```*/old-gems/*``` will give ```https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/old-gems/nokogiri-1.4.4.tar.gz```. These shortcuts are much easier to type and they will dynamically use the proper gem versions.
+* a ```nil``` or ```*``` is a sibling file to the dependency index, named ```${gemname}-${version}.tar.gz```
+* a leading ```*``` will be replaced with the base directory of the dependency index
+* a subsequent ```*``` will be replaced with ```${gemname}-${version}.tar.gz```
+* a leading ```+``` indicates a development dependency
+* a leading ```-``` indicates a build-time argument to the ```gem``` command
+* a value containing ```.tar.gz``` indicates a binary extensions tarball
+
+Wildcards can be combined such as ```unf_ext``` where the values for one version range includes ```*/old-gems/*```. In this example, this gives ```https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/old-gems/unf_ext-0.0.6.tar.gz```. These shortcuts are much easier to type and they will dynamically use the proper gem versions.
+
+## Development system
+
+Make sure your development system has the same architecture as your runtime system. Development systems are indicated by a leading ```+``` in the value of the ```GEM_DEPENDENCIES``` environment variable. Suppose the following variable is set:
+
+```shell
+export GEM_DEPENDENCIES="+https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/INDEX.yaml"
+```
+
+Then, this command:
+
+```shell
+gem install nokogiri
+```
+
+will lookup the dependency index, finding:
+
+```yaml
+nokogiri: "* libxml2 libxslt +libxml2-dev +libxslt-dev -- --use-system-libraries"
+```
+
+which will:
+
+* Install the ```libxml2-dev``` and ```libxslt-dev``` packages (these start with ```+```)
+* Execute ```gem install nokogiri -- --use-system-libraries``` (these start with ```-```)
+* Create a binary extensions tarball (e.g. ```nokogiri-1.6.6.2.tar.gz```) in the current directory
 
 ## Runtime system
 
-If ```GEM_DEPENDENCIES``` is set to a file system path or an http, https, git, or s3 url, then this value will be used to fetch the dependency index. Suppose the following command is run from the runtime system:
+Suppose the following variable is set (without the leading ```+``` character):
 
 ```shell
 export GEM_DEPENDENCIES="https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/INDEX.yaml"
-gem install bcrypt
 ```
 
-The dependency index will be downloaded and searched for the requested gem and version. If a match is found, then the order of installation is as follows:
+Then, this command:
 
-* package dependencies will be installed (uses the value from the ```command``` key),
-* the 'normal' gem files will be installed
-* the 'normal' build_extensions step will be skipped, and
-* compiled extension tarballs will be downloaded and installed
+```shell
+gem install nokogiri
+```
+
+will lookup the dependency index, finding:
+
+```yaml
+nokogiri: "* libxml2 libxslt +libxml2-dev +libxslt-dev -- --use-system-libraries"
+```
+
+which will:
+
+* Install the ```libxml2``` and ```libxslt``` packages
+* Execute ```gem install nokogiri```, but will skip the ```build_extensions``` step
+* Download and extract the default extensions tarball at ```https://github.com/shreeve/gemdeps-alpine-3.2-x86_64-2.2.0/blob/master/nokogiri-1.6.6.2.tar.gz```
 
 Note that a version requirement can also be specified in the ```gem install``` command. For example, the following are all valid:
 
@@ -74,11 +119,11 @@ alias bundle='RUBYOPT="-rrubygems/gem_dependencies" bundle'
 
 ## Todos
 
-* Allow both compiler and runtime package dependencies in the dependency index file
-* Allow the use of flags (such as ```--use-system-libraries```) for packages
 * Document how to create a platform repository (e.g. on GitHub)
-* ~~Make sure everything works seamlessly with ```bundler```~~
+* ~~Allow both compiler and runtime package dependencies in the dependency index file~~
+* ~~Allow the use of flags (such as ```--use-system-libraries```) for packages~~
 * ~~Document the various formats supported in the dependency index file~~
+* ~~Make sure everything works seamlessly with ```bundler```~~
 
 ## License
 
