@@ -21,27 +21,35 @@ module Gem
     module Dependencies
       require 'rubygems/user_interaction'
       include Gem::UserInteraction
-      REGEXP_SCHEMA = %r|\A[a-z][a-z\d]{1,5}://|io
+
+      REGEXP_SCHEMA = %r|\A[a-z][a-z\d]{1,5}://|i
+      REGEXP_DEVPKG = %r|^\+|
+      REGEXP_DEVARG = %r|^(?=-)|
 
       def build_extensions
-        if (env = ENV["GEM_DEPENDENCIES"]) == "1"
-          super
-          path = "#{spec.full_name}.tar.gz"
-          File.binwrite(path, gzip(tar(spec.extension_dir)))
-          say "Extensions packaged as #{path}"
-        elsif deps = find_dependencies(env)
-          pkgs, exts = deps
+        if deps = find_dependencies(ENV["GEM_DEPENDENCIES"])
+          pkgs, exts, args = deps
           install_os_packages(*pkgs) if pkgs.any?
+          if args
+            @build_args.concat(args)
+            super
+            path = "#{spec.full_name}.tar.gz"
+            File.binwrite(path, gzip(tar(spec.extension_dir)))
+            say "Extensions packaged as #{path}"
+          end
           copy_gem_extensions(*exts) if exts.any?
         end
         true
       end
 
-      # return a gem's packages and extensions
+      # return a gem's packages, extensions, and arguments
       def find_dependencies(env)
+        args = [] if (env = env.dup).sub!(REGEXP_DEVPKG,'') # are we in compile mode?
+        return [[], [], args] if args && env.empty?
+
         require 'rubygems/remote_fetcher'
         @@deps = YAML.load(fetch(env))['gems'] unless defined?(@@deps)
-        @@deps.key?(spec.name) or return
+        @@deps.key?(spec.name) or return(args ? [[], [], args] : nil)
 
         # find dependencies
         case deps = @@deps[spec.name]
@@ -63,8 +71,19 @@ module Gem
         benv = File.dirname(env.split(/[?;#]/,2).first)
         name = "#{spec.full_name}.tar.gz"
 
-        # return packages and extensions
-        exts, pkgs = deps.partition {|item| item.include?("*") || item =~ REGEXP_SCHEMA || item.include?(".tar.gz")}
+        # grok dependencies
+        pkgs, exts = [], []
+        deps.each do |item|
+          if item.include?("*") || item =~ REGEXP_SCHEMA || item.include?(".tar.gz")
+            exts << item unless args
+          elsif item =~ REGEXP_DEVPKG
+            pkgs << $' if args
+          elsif item =~ REGEXP_DEVARG
+            args << $' if args
+          else
+            pkgs << item unless args
+          end
+        end
         exts.map! do |item|
           case item
             when "*"       then item = File.join(benv, name) # use complete default tarball name
@@ -73,7 +92,7 @@ module Gem
           end
           item.gsub("*", name) # swap inline wildcards with default tarball name
         end
-        [pkgs, exts]
+        [pkgs, exts, args]
       end
 
       def install_os_packages(*args)
