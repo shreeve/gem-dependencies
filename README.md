@@ -6,6 +6,11 @@ A RubyGems plugin that simplifies working with gems that have binary extensions.
 
 Think of ```gem-dependencies``` as a helper that allows lightweight systems, such as docker containers, to be able to use native rubygems without having a compiler installed. At the moment that ```gem install``` would normally try to compile a binary extension, ```gem-dependencies``` will lookup the gem in it's dependency index and, if a matching version is found, install any required runtime packages and then download and extract any pre-compiled binary extensions. Everything works seamlessly and efficiently.
 
+
+## Installation
+
+```gem install gem-dependency```
+
 ## Usage
 
 You don't need to do anything special, just use ```gem install``` as normal. The resulting behavior is controlled by the value of the ```GEM_DEPENDENCIES``` environment variable. If this environment variable is not set, then this gem has no effect and is simply ignored. If ```GEM_DEPENDENCIES``` is set to a file system path or an http, https, git, or s3 url, then this value will be used to fetch the dependency index. As an additional help, all urls that begin with ```https://github.com/``` will be automatically suffixed with ```?raw=true```.
